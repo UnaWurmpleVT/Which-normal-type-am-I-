@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Who's my normal type Pokémon?</title>
+
+  <!-- Rounded, cute font (falls back gracefully if offline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      /* Pastel cream -> pastel emerald gradient */
+      --cream-1: #fff7ea;
+      --cream-2: #fff1dc;
+      --mint-1: #baf3d0;
+      --mint-2: #86e0b3;
+      --mint-3: #45c98b;
+
+      --ink: rgba(38, 40, 52, .92);
+      --muted: rgba(38, 40, 52, .68);
+
+      --card: rgba(255,255,255,.72);
+      --card2: rgba(255,255,255,.62);
+
+      --shadow: 0 18px 60px rgba(20, 26, 38, .18);
+      --ring: rgba(69, 201, 139, .35);
+      --ring2: rgba(255, 182, 205, .35);
+
+      --pink-1: #ffd6e7;
+      --pink-2: #ffc3dc;
+      --lav-1: #e7dcff;
+      --lav-2: #d8c8ff;
+
+      --radius-xl: 34px;
+      --radius-pill: 999px;
+    }
+
+    *{ box-sizing:border-box; }
+    html, body { height: 100%; }
+
+    body{
+      margin:0;
+      font-family: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--ink);
+      overflow-x:hidden;
+
+      background:
+        radial-gradient(900px 550px at 20% 12%, rgba(255, 182, 205, .55), transparent 60%),
+        radial-gradient(900px 550px at 80% 10%, rgba(215, 200, 255, .65), transparent 60%),
+        linear-gradient(180deg, var(--cream-1) 0%, var(--cream-2) 38%, var(--mint-1) 62%, var(--mint-2) 80%, var(--mint-3) 100%);
+    }
+
+    /* Cute, subtle sparkles */
+    .sparkles{
+      position: fixed;
+      inset: 0;
+      pointer-events:none;
+      opacity:.35;
+      background:
+        radial-gradient(2px 2px at 12% 18%, rgba(255,255,255,.9) 55%, transparent 56%),
+        radial-gradient(2px 2px at 31% 10%, rgba(255,255,255,.85) 55%, transparent 56%),
+        radial-gradient(2px 2px at 72% 22%, rgba(255,255,255,.85) 55%, transparent 56%),
+        radial-gradient(2px 2px at 88% 14%, rgba(255,255,255,.75) 55%, transparent 56%),
+        radial-gradient(2px 2px at 60% 8%, rgba(255,255,255,.75) 55%, transparent 56%),
+        radial-gradient(2px 2px at 10% 55%, rgba(255,255,255,.6) 55%, transparent 56%),
+        radial-gradient(2px 2px at 90% 64%, rgba(255,255,255,.6) 55%, transparent 56%);
+      filter: blur(.2px);
+    }
+
+    /* Bottom grass */
+    .grass{
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 140px;
+      pointer-events:none;
+      background:
+        /* soft ground */
+        linear-gradient(180deg, rgba(69, 201, 139, .00), rgba(69, 201, 139, .14) 35%, rgba(69, 201, 139, .22)),
+        /* blade lines */
+        repeating-linear-gradient(115deg,
+          rgba(15, 82, 58, .12) 0px, rgba(15, 82, 58, .12) 2px,
+          transparent 2px, transparent 22px
+        );
+      opacity: .75;
+      filter: blur(.2px);
+      mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.4) 18%, rgba(0,0,0,1) 55%);
+    }
+    .grass:before{
+      content:"";
+      position:absolute; inset:-30px 0 0 0;
+      background:
+        radial-gradient(18px 26px at 6% 88%, rgba(255,255,255,.45) 0 60%, transparent 61%),
+        radial-gradient(22px 30px at 18% 92%, rgba(255,255,255,.40) 0 60%, transparent 61%),
+        radial-gradient(16px 24px at 34% 90%, rgba(255,255,255,.42) 0 60%, transparent 61%),
+        radial-gradient(24px 34px at 52% 94%, rgba(255,255,255,.36) 0 60%, transparent 61%),
+        radial-gradient(18px 26px at 70% 92%, rgba(255,255,255,.40) 0 60%, transparent 61%),
+        radial-gradient(22px 30px at 86% 94%, rgba(255,255,255,.38) 0 60%, transparent 61%);
+      opacity:.45;
+      filter: blur(.2px);
+    }
+
+    .wrap{
+      min-height: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 26px 18px 170px; /* leave room for grass */
+      position: relative;
+    }
+
+    .shell{
+      width: min(760px, 100%);
+      position: relative;
+    }
+
+    .card{
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid rgba(255,255,255,.55);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      position: relative;
+      overflow:hidden;
+    }
+
+    .card:before{
+      content:"";
+      position:absolute; inset:-60px -60px auto -60px;
+      height: 180px;
+      background: radial-gradient(closest-side at 35% 45%, rgba(255, 214, 231, .78), transparent 70%),
+                  radial-gradient(closest-side at 75% 35%, rgba(231, 220, 255, .78), transparent 70%);
+      opacity:.8;
+      filter: blur(10px);
+      pointer-events:none;
+    }
+
+    .toprow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    h1{
+      margin:0;
+      font-size: clamp(26px, 3.2vw, 40px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle{
+      margin:0;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      border-radius: var(--radius-pill);
+      padding: 12px 16px;
+      border: 1px solid rgba(255,255,255,.72);
+      background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.55));
+      color: var(--ink);
+      font-weight: 900;
+      letter-spacing: .01em;
+      cursor:pointer;
+      user-select:none;
+      text-decoration:none;
+      transition: transform .06s ease, box-shadow .15s ease, border-color .15s ease, filter .15s ease;
+      box-shadow: 0 10px 26px rgba(20, 26, 38, .10);
+      position: relative;
+      z-index: 2;
+    }
+
+    .pill:hover{
+      box-shadow: 0 0 0 6px var(--ring), 0 14px 34px rgba(20, 26, 38, .14);
+      border-color: rgba(69, 201, 139, .55);
+      filter: saturate(1.05);
+    }
+
+    .pill:active{ transform: translateY(1px); }
+
+    .pill.primary{
+      background: linear-gradient(180deg, rgba(255, 214, 231, .95), rgba(231, 220, 255, .85));
+      border-color: rgba(255,255,255,.7);
+    }
+
+    .pill.ghost{
+      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));
+      font-weight: 900;
+      color: rgba(38, 40, 52, .78);
+    }
+
+    .pill.small{
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    .content{
+      margin-top: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .bubble{
+      border-radius: 28px;
+      padding: 16px 16px;
+      border: 1px solid rgba(255,255,255,.64);
+      background: linear-gradient(180deg, rgba(255,255,255,.70), rgba(255,255,255,.50));
+      box-shadow: 0 16px 44px rgba(20, 26, 38, .10);
+    }
+
+    .qmeta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: rgba(38, 40, 52, .65);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .question{
+      margin: 0;
+      font-size: clamp(18px, 2.2vw, 24px);
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      font-weight: 900;
+    }
+
+    .answers{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    @media (min-width: 640px){
+      .answers{
+        grid-template-columns: 1fr 1fr; /* about 2 pills per question */
+      }
+    }
+
+    .answer{
+      width:100%;
+      text-align:left;
+      font-size: 15px;
+      line-height: 1.2;
+      padding: 14px 16px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(255,255,255,.72);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .76), rgba(255, 255, 255, .52));
+      box-shadow: 0 12px 30px rgba(20, 26, 38, .10);
+      font-weight: 900;
+      color: rgba(38, 40, 52, .88);
+      cursor:pointer;
+      transition: transform .06s ease, box-shadow .15s ease, border-color .15s ease, filter .15s ease;
+      position: relative;
+      overflow:hidden;
+    }
+    .answer:before{
+      content:"";
+      position:absolute;
+      inset:-40px -60px auto -60px;
+      height: 100px;
+      background: radial-gradient(closest-side at 30% 40%, rgba(255, 214, 231, .75), transparent 70%),
+                  radial-gradient(closest-side at 70% 35%, rgba(231, 220, 255, .75), transparent 70%);
+      filter: blur(10px);
+      opacity:.85;
+    }
+    .answer span{ position: relative; z-index: 2; }
+
+    .answer:hover{
+      box-shadow: 0 0 0 6px var(--ring2), 0 16px 40px rgba(20, 26, 38, .14);
+      border-color: rgba(255, 182, 205, .75);
+      filter: saturate(1.06);
+    }
+    .answer:active{ transform: translateY(1px); }
+
+    .center{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      text-align:center;
+      gap: 14px;
+      padding: 18px 10px 6px;
+    }
+
+    .big{
+      font-size: clamp(28px, 3.4vw, 44px);
+      margin: 0;
+      letter-spacing:-0.02em;
+      font-weight: 1000;
+    }
+
+    .note{
+      margin: 0;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.5;
+      max-width: 56ch;
+    }
+
+    .resultWrap{
+      display:flex;
+      flex-direction:column;
+      gap: 14px;
+      align-items:center;
+    }
+
+    .pokeCard{
+      width: min(460px, 100%);
+      border-radius: 34px;
+      border: 1px solid rgba(255,255,255,.7);
+      background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.52));
+      box-shadow: 0 18px 48px rgba(20, 26, 38, .14);
+      padding: 18px;
+      position: relative;
+      overflow:hidden;
+    }
+    .pokeCard:before{
+      content:"";
+      position:absolute; inset:-80px -80px auto -80px;
+      height: 220px;
+      background: radial-gradient(closest-side at 35% 45%, rgba(186, 243, 208, .85), transparent 70%),
+                  radial-gradient(closest-side at 75% 35%, rgba(255, 214, 231, .75), transparent 70%);
+      opacity:.85;
+      filter: blur(12px);
+      pointer-events:none;
+    }
+
+    .pokeTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      position: relative;
+      z-index: 2;
+      margin-bottom: 12px;
+    }
+
+    .pokeName{
+      margin:0;
+      font-weight: 1000;
+      letter-spacing:-0.02em;
+      font-size: 22px;
+    }
+
+    .pokeImg{
+      width: min(320px, 80vw);
+      height: auto;
+      display:block;
+      margin: 8px auto 6px;
+      filter: drop-shadow(0 18px 24px rgba(20,26,38,.18));
+      image-rendering: auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(255,255,255,.7);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 900;
+      box-shadow: 0 16px 44px rgba(20,26,38,.18);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .2s ease, transform .2s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(-6px);
+    }
+
+    .tinyRow{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+
+    .credit{
+      margin-top: 14px;
+      text-align:center;
+      color: rgba(38, 40, 52, .55);
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .credit code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight: 800;
+      font-size: 12px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.7);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+  
+    /* Sparkle burst (result reveal) */
+    .burstLayer{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      overflow:visible;
+      z-index: 6;
+    }
+    .spark{
+      position:absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,1), rgba(255,255,255,.35) 55%, transparent 70%);
+      box-shadow: 0 0 0 6px rgba(255,214,231,.18), 0 0 0 12px rgba(186,243,208,.14);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.6);
+    }
+    @keyframes sparkOut{
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+      15%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.25); }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="sparkles"></div>
+  <div class="grass"></div>
+
+  <!-- music (plays after user taps Start) -->
+  <audio id="bgm" src="./music/pokemon_quiz.mp3" loop preload="auto"></audio>
+
+  <div class="wrap">
+    <div class="shell">
+      <div class="card" id="app"></div>
+      <div class="credit">made by <a href="https://www.twitch.tv/unawurmplevt" target="_blank">UnaWurmpleVT</a></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied! 💞</div>
+
+  <script>
+    // ====== Pokémon quiz data ======
+    const POKEMON = {
+      bidoof:   { name: "Bidoof",   img: "./assets/bidoof.png",   blurb: "The comfy lord. “It’s okki, we’ll figure it out.”
+
+You gravitate toward cozy spaces, relaxed plans, and people who let you exist without pressure. When life gets messy, you don’t panic — you adapt. Your quiet resilience doesn’t shout for attention, but it’s deeply felt by those around you.
+
+Your love language is comfort. You make people feel safe simply by being present, unbothered, and warm. You don’t chase perfection — you chase peace, and that’s what makes your energy magnetic." },
+      minccino: { name: "Minccino", img: "./assets/minccino.png", blurb: "The gentle perfectionist. “Hmh... Everything must be perfect!”
+
+You carry a desire to create beauty and comfort in your world. You notice the small things others miss — the sock on the floor, the undertone in a sentence, the subtle shifts in behaviour.
+
+You love through intention. Whether it’s remembering favorite snacks, fixing small problems, or keeping things neat, your care shows in quiet acts rather than loud declarations. Your charm isn’t just your cuteness — it’s your reliability in the tiny moments that matter most." },
+      skitty:   { name: "Skitty",   img: "./assets/skitty.png",   blurb: "The playful romantic. The chaos gremlin. The embodiment of cute but emotionally loud.
+
+You’re expressive, emotionally warm, and naturally affectionate — whether through cuddles, playful teasing, or spontaneous sweetness. You can be a little needy and crave reassurance, but that vulnerability makes your love feel incredibly genuine.
+
+You bring lightness into people’s lives without trying. Your energy is soft but vibrant, and your presence turns ordinary moments into memories." },
+      azurill:  { name: "Azurill",  img: "./assets/azurill.png",  blurb: "The soft heart. The emotional dreamer. The embodiment of baby.
+
+You carry a deep emotional sensitivity that makes you profoundly kind. You feel things intensely — not as weakness, but as empathy.
+
+Your love is safe, nurturing, and warm. You crave connection built on softness, reassurance, and emotional honesty. Even when you feel shy or fragile, your kindness leaves a lasting mark on people." },
+      lillipup: { name: "Lillipup", img: "./assets/lillipup.png", blurb: "The good boy. The protector. The loyalty archetype.
+
+Your reliability and willingness to help immediately make you the embodiment of a dependable person. You love through presence, support, and quiet dedication.
+
+You may not always be flashy, but you’re steady — and that steadiness is rare. Your love isn’t loud — it’s constant. And constant love is the strongest kind." },
+      hoothoot: { name: "Hoothoot", img: "./assets/hoothoot.png", blurb: "The observer. The emotional analyst. The quiet comfort soul.
+
+You carry a calm wisdom that makes people feel understood. You process emotions deeply and value meaningful connections over surface interactions.
+
+You show affection through listening, insight, and quiet reassurance. Beneath your calm exterior is a rich emotional world and a profound capacity for understanding." }
+    };
+
+    // 6 questions, 2 options each (cute, simple). Each option adds points to 2–3 Pokémon.
+    
+
+const QUESTIONS = [
+  {
+    q: "Your ideal hangout is…",
+    a: [
+      { t: "Blanket Fort & Snacks", p: { bidoof: 1, azurill: 1, skitty: 1 } },
+      { t: "A little walk & silly photos", p: { skitty: 1, lillipup: 1, hoothoot: 1, minccino: 1 } }
+    ]
+  },
+  {
+    q: "When you like someone, you usually…",
+    a: [
+      { t: "Show up for them (consistently)", p: { lillipup: 2, bidoof: 1, skitty: 1, hoothoot: 1 } },
+      { t: "Tease them gently and make them laugh", p: { minccino: 1, azurill: 1 } }
+    ]
+  },
+  {
+    q: "Pick a vibe",
+    a: [
+      { t: "Soft, sweet, a bit pastel!", p: { azurill: 2, skitty: 2, minccino: 1 } },
+      { t: "Chill and low drama!", p: { bidoof: 2, hoothoot: 2, lillipup: 1 } }
+    ]
+  },
+  {
+    q: "Your love-language “tell” is…",
+    a: [
+      { t: "Little thoughtful details (remembering tiny things)", p: { hoothoot: 1, minccino: 1, azurill: 1, lillipup: 2 } },
+      { t: "Physical affection (cuddles / leaning / cozy touch)", p: { skitty: 2, bidoof: 1 } }
+    ]
+  },
+  {
+    q: "If plans change last minute, you’re like…",
+    a: [
+      { t: "No worries — we’ll vibe anyway", p: { bidoof: 2, skitty: 1, lillipup: 2 } },
+      { t: "Wait… I need a new plan (but I’ll make it cute)", p: { minccino: 1, hoothoot: 1, azurill: 1, skitty: 2 } }
+    ]
+  },
+  {
+    q: "Your friends would describe you as…",
+    a: [
+      { t: "Reliable and warm", p: { lillipup: 2, hoothoot: 1, bidoof: 1 } },
+      { t: "Adorable and a little silly", p: { skitty: 2, azurill: 1, minccino: 1 } }
+    ]
+  },
+  {
+    q: "Oh no! there’s so much stuff laying around!! I will...",
+    a: [
+      { t: "Pick it up! I’m not a big fan of all this chaos!", p: { minccino: 2, hoothoot: 1, lillipup: 1 } },
+      { t: "I feel like napping now! I’ll pick it up later!", p: { skitty: 1, azurill: 2, bidoof: 2 } }
+    ]
+  },
+  {
+    q: "When leaving the house, I always...",
+    a: [
+      { t: "Make sure I look ready and pretty!", p: { minccino: 2, skitty: 2, azurill: 1 } },
+      { t: "Make sure I have everything I need with me.", p: { hoothoot: 2, lillipup: 1, bidoof: 1 } }
+    ]
+  },
+  {
+    q: "Someone needs my help!",
+    a: [
+      { t: "I must help them immediately! No questions asked!", p: { lillipup: 2, bidoof: 1, azurill: 1 } },
+      { t: "huh? Do I know them??? Maybe I should make sure of that first...", p: { skitty: 2, hoothoot: 2, minccino: 2 } }
+    ]
+  },
+  {
+    q: "When with my friends...",
+    a: [
+      { t: "I love DEEP conversations that allow us to share our views!", p: { hoothoot: 2, minccino: 1, bidoof: 2 } },
+      { t: "I love talking about feelings and cute things!", p: { skitty: 2, azurill: 1, lillipup: 1 } }
+    ]
+  }
+];
+
+
+
+    // ====== App state ======
+    const app = document.getElementById("app");
+    const bgm = document.getElementById("bgm");
+    const toast = document.getElementById("toast");
+
+    const state = {
+      i: 0,
+      scores: Object.fromEntries(Object.keys(POKEMON).map(k => [k, 0])),
+      started: false
+    };
+
+    function esc(s){
+      return String(s)
+        .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      window.clearTimeout(showToast._t);
+      showToast._t = window.setTimeout(()=>toast.classList.remove("show"), 1300);
+    }
+
+    function pickWinner(){
+      // deterministic tie-break by key order
+      const keys = Object.keys(POKEMON);
+      let best = keys[0];
+      for (const k of keys){
+        if (state.scores[k] > state.scores[best]) best = k;
+      }
+      return best;
+    }
+
+    function setQueryResult(id){
+      const url = new URL(window.location.href);
+      url.searchParams.set("r", id);
+      history.replaceState({}, "", url.toString());
+    }
+
+    function clearQueryResult(){
+      const url = new URL(window.location.href);
+      url.searchParams.delete("r");
+      history.replaceState({}, "", url.toString());
+    }
+
+    async function copyResultImageAndText(){
+      const img = document.querySelector(".pokeImg");
+      const name = (document.querySelector(".pokeName")?.textContent || "").replace(/✨/g,"").trim();
+      const shareText = `Hey! I just did UnaWurmpleVT's Normal type quiz!\n\nI got ${name || "[insert result here]"}, do it aswell! [placeholder link]`;
+
+      // Best: image + text together (Chromium-based browsers)
+      if (img && navigator.clipboard && window.ClipboardItem){
+        try{
+          const res = await fetch(img.src, { cache: "no-cache" });
+          const blob = await res.blob();
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              [blob.type || "image/png"]: blob,
+              "text/plain": new Blob([shareText], { type: "text/plain" })
+            })
+          ]);
+          showToast("Copied image + text! ✨");
+          return;
+        }catch(e){
+          // fall back to text-only
+        }
+      }
+
+      // Fallback: text only
+      try{
+        await navigator.clipboard.writeText(shareText);
+        showToast("Copied text! 💞");
+      }catch(e){
+        const ta = document.createElement("textarea");
+        ta.value = shareText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        showToast("Copied text! 💞");
+      }
+    }
+
+    // Play a real cry from ./music/<id>.mp3 (user-provided)
+    function playCry(id){
+      try{
+        const a = new Audio(`./music/${id}.mp3`);
+        a.volume = 0.9;
+        a.currentTime = 0;
+        const p = a.play();
+        if (p && typeof p.catch === "function") p.catch(()=>{});
+      }catch(e){}
+    }
+
+    function reset(){
+
+      state.i = 0;
+      for (const k of Object.keys(state.scores)) state.scores[k] = 0;
+    }
+
+    function renderHome(){
+      clearQueryResult();
+      app.innerHTML = `
+        <div class="toprow">
+          <div class="brand">
+            <h1>Who's my normal type Pokémon?</h1>
+            <p class="subtitle">A tiny pastel quiz 🌿💗</p>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="bubble center">
+            <p class="big">Ready for your comfy match?</p>
+            <p class="note">Answer a few quick questions and we’ll reveal the normal-type cutie you vibe with most ✨</p>
+            <button class="pill primary" id="startBtn" type="button">let’s find out!</button>
+
+            <div class="tinyRow" style="margin-top:2px;">
+              <button class="pill ghost small" id="toggleMusic" type="button" title="Toggle music">♪ music: off</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const startBtn = document.getElementById("startBtn");
+      const toggleMusic = document.getElementById("toggleMusic");
+
+      // Start button begins quiz and attempts to play music (allowed after user gesture)
+      startBtn.addEventListener("click", async () => {
+        state.started = true;
+        reset();
+        await tryPlayMusic(true);
+        renderQuestion();
+      });
+
+      toggleMusic.addEventListener("click", async () => {
+        const on = !isMusicPlaying();
+        await tryPlayMusic(on);
+        toggleMusic.textContent = on ? "♪ music: on" : "♪ music: off";
+      });
+    }
+
+    function isMusicPlaying(){
+      return !bgm.paused && bgm.currentTime > 0;
+    }
+
+    async function tryPlayMusic(shouldPlay){
+      try{
+        if (shouldPlay){
+          bgm.volume = 0.35;
+          await bgm.play();
+        } else {
+          bgm.pause();
+        }
+      }catch(e){
+        // Autoplay can be blocked until a user gesture — that's okay.
+      }
+    }
+
+    function burstSparkles(){
+      const layer = document.getElementById("burst");
+      if (!layer) return;
+      layer.innerHTML = "";
+      const rect = layer.getBoundingClientRect();
+      const cx = rect.width * 0.5;
+      const cy = rect.height * 0.32;
+
+      const n = 14;
+      for (let i=0;i<n;i++){
+        const s = document.createElement("div");
+        s.className = "spark";
+        const ang = (Math.PI * 2) * (i / n) + (Math.random() * 0.35);
+        const dist = 90 + Math.random() * 70;
+        const dx = Math.cos(ang) * dist;
+        const dy = Math.sin(ang) * dist * 0.72;
+        s.style.left = cx + "px";
+        s.style.top  = cy + "px";
+        s.style.setProperty("--dx", dx.toFixed(1) + "px");
+        s.style.setProperty("--dy", dy.toFixed(1) + "px");
+        s.style.animation = "sparkOut .62s ease-out both";
+        s.style.animationDelay = (Math.random() * 0.06).toFixed(2) + "s";
+        layer.appendChild(s);
+      }
+    }
+
+function renderQuestion(){
+      const q = QUESTIONS[state.i];
+
+      app.innerHTML = `
+        <div class="toprow">
+          <div class="brand">
+            <h1>Who's my normal type Pokémon?</h1>
+            <p class="subtitle">Question ${state.i + 1} / ${QUESTIONS.length}</p>
+          </div>
+          <button class="pill ghost small" id="musicBtn" type="button" title="Toggle music">♪ ${isMusicPlaying() ? "on" : "off"}</button>
+        </div>
+
+        <div class="content">
+          <div class="bubble">
+            <div class="qmeta">
+              <span>Pick the one that feels most you ✨</span>
+              <span>🌿</span>
+            </div>
+            <p class="question">${esc(q.q)}</p>
+
+            <div class="answers">
+              ${q.a.map((opt, idx) => `
+                <button class="answer" type="button" data-idx="${idx}">
+                  <span>${esc(opt.t)}</span>
+                </button>
+              `).join("")}
+            </div>
+
+            <div class="tinyRow" style="margin-top:14px;">
+              <button class="pill ghost small" id="restartBtn" type="button">Restart</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("musicBtn").addEventListener("click", async () => {
+        const on = !isMusicPlaying();
+        await tryPlayMusic(on);
+        document.getElementById("musicBtn").textContent = `♪ ${on ? "on" : "off"}`;
+      });
+
+      document.getElementById("restartBtn").addEventListener("click", () => {
+        renderHome();
+      });
+
+      app.querySelectorAll("button[data-idx]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.dataset.idx);
+          const opt = q.a[idx];
+          for (const [k, v] of Object.entries(opt.p)){
+            if (state.scores[k] == null) continue;
+            state.scores[k] += Number(v) || 0;
+          }
+          state.i += 1;
+          if (state.i >= QUESTIONS.length){
+            const win = pickWinner();
+            playCry(win);
+            renderResult(win);
+          } else {
+            renderQuestion();
+          }
+        });
+      });
+    }
+
+    function renderResult(id){
+      const p = POKEMON[id];
+      playCry(id);
+      setQueryResult(id);
+
+      app.innerHTML = `
+        <div class="toprow">
+          <div class="brand">
+            <h1>Who's my normal type Pokémon?</h1>
+            <p class="subtitle">Your result is in! 💗</p>
+          </div>
+          <button class="pill small" id="shareBtn" type="button">share with friends</button>
+        </div>
+
+        <div class="content">
+          <div class="bubble center">
+            <p class="big">You got… <span style="white-space:nowrap;">${esc(p.name)}!</span></p>
+            <p class="note">${esc(p.blurb)}</p>
+
+            <div class="resultWrap">
+              <div class="pokeCard">
+                <div class="burstLayer" id="burst"></div>
+                <div class="pokeTop">
+                  <p class="pokeName">✨ ${esc(p.name)} ✨</p>
+                  <button class="pill ghost small" id="shareBtn2" type="button">share</button>
+                </div>
+                <img class="pokeImg" src="${esc(p.img)}" alt="${esc(p.name)}">
+              </div>
+
+              <div class="tinyRow">
+                <button class="pill primary" id="againBtn" type="button">take again</button>
+                <button class="pill ghost" id="homeBtn" type="button">home</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const share = async () => {
+        await copyResultImageAndText();
+      };
+      document.getElementById("shareBtn").addEventListener("click", share);
+      document.getElementById("shareBtn2").addEventListener("click", share);
+
+      document.getElementById("againBtn").addEventListener("click", () => {
+        reset();
+        state.started = true;
+        renderQuestion();
+      });
+      document.getElementById("homeBtn").addEventListener("click", () => renderHome());
+
+      // Sparkle burst on reveal
+      burstSparkles();
+    }
+
+    // If someone opens a shared link with ?r=...
+    (function boot(){
+      const url = new URL(window.location.href);
+      const r = url.searchParams.get("r");
+      if (r && POKEMON[r]){
+        // Try to play music only after user gesture; we won't auto-play here.
+        renderResult(r);
+      } else {
+        renderHome();
+      }
+    })();
+  </script>
+</body>
+</html>
