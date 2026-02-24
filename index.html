@@ -628,7 +628,7 @@ const QUESTIONS = [
     async function copyResultImageAndText(){
       const img = document.querySelector(".pokeImg");
       const name = (document.querySelector(".pokeName")?.textContent || "").replace(/✨/g,"").trim();
-      const shareText = `Hey! I just did UnaWurmpleVT's Normal type quiz!\n\nI got ${name || "[insert result here]"}, do it aswell! [placeholder link]`;
+      const shareText = `Hey! I just did UnaWurmpleVT's Normal type quiz! I got ${name || "[insert result here]"}, do it aswell! https://unawurmplevt.github.io/Which-normal-type-am-I-/`;
 
       // Best: image + text together (Chromium-based browsers)
       if (img && navigator.clipboard && window.ClipboardItem){
